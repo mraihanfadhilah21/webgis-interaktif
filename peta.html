@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WebGIS Interaktif</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -13,27 +12,18 @@
     header { padding: 10px; background: #2c3e50; color: white; text-align: center; }
     #map { height: 90vh; }
     .legend { background: white; padding: 10px; line-height: 1.5; }
-    .filter { position: absolute; top: 80px; left: 10px; background: white; padding: 10px; z-index: 1000; }
-    .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; }
+    .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 2000; }
   </style>
 </head>
 <body>
 
 <header>
-  <h2>WebGIS Interaktif - GitHub Pages</h2>
-  <p>Data dari Google Sheets</p>
+  <h2>WebGIS Interaktif - Google Sheets CSV</h2>
 </header>
-
-<div class="filter">
-  <strong>Filter Kategori</strong><br>
-  <input type="checkbox" id="cat1" checked> Kategori A<br>
-  <input type="checkbox" id="cat2" checked> Kategori B
-</div>
 
 <div id="map"></div>
 <div class="loading" id="loading">Loading...</div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
@@ -44,76 +34,108 @@
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  var sat = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenTopoMap'
   });
 
   var baseMaps = {
     "OSM": osm,
-    "Topo": sat
+    "Topo": topo
   };
 
-  L.control.layers(baseMaps).addTo(map);
+  // Layer group per kategori
+  var wisataLayer = L.layerGroup();
+  var kulinerLayer = L.layerGroup();
+  var fasilitasLayer = L.layerGroup();
 
-  var markers = [];
+  var overlayMaps = {
+    "Tempat Wisata": wisataLayer,
+    "Kuliner": kulinerLayer,
+    "Fasilitas Umum": fasilitasLayer
+  };
+
+  // Control (kategori muncul di bawah basemap)
+  L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+  // Custom icons
+  var iconWisata = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/11137/11137156.png',
+    iconSize: [25, 25]
+  });
+
+  var iconKuliner = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/6078/6078099.png',
+    iconSize: [25, 25]
+  });
+
+  var iconFasilitas = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/15654/15654202.png',
+    iconSize: [25, 25]
+  });
 
   function loadData() {
     document.getElementById('loading').style.display = 'block';
 
-    fetch('https://opensheet.elk.sh/YOUR_SHEET_ID/Sheet1')
-      .then(res => res.json())
-      .then(data => {
-        data.forEach(d => {
-          var lat = parseFloat(d.lat);
-          var lng = parseFloat(d.lng);
-          var kategori = d.kategori;
+    fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSxqP6EugqhcuUzU13n3o5zVdL8lR7gQTntg7IzXCUua6ASpcs8UQvW3EWNyNUqGiH_lcc54P9qt9o6/pub?output=csv')
+      .then(res => res.text())
+      .then(csv => {
+        var rows = csv.split('\n').slice(1);
 
-          var color = kategori === 'A' ? 'red' : 'blue';
+        rows.forEach(row => {
+          var cols = row.split(',');
 
-          var marker = L.circleMarker([lat, lng], {
-            color: color
-          }).bindPopup(`<b>${d.nama}</b><br>${kategori}`);
+          var nama = cols[0];
+          var lat = parseFloat(cols[1]);
+          var lng = parseFloat(cols[2]);
+          var kategori = cols[3];
 
-          marker.category = kategori;
-          marker.addTo(map);
-          markers.push(marker);
+          if (isNaN(lat) || isNaN(lng)) return;
+
+          var marker;
+
+          if (kategori === 'Tempat Wisata') {
+            marker = L.marker([lat, lng], {icon: iconWisata});
+            marker.addTo(wisataLayer);
+          } else if (kategori === 'Kuliner') {
+            marker = L.marker([lat, lng], {icon: iconKuliner});
+            marker.addTo(kulinerLayer);
+          } else if (kategori === 'Fasilitas Umum') {
+            marker = L.marker([lat, lng], {icon: iconFasilitas});
+            marker.addTo(fasilitasLayer);
+          }
+
+          if (marker) {
+            marker.bindPopup(`<b>${nama}</b><br>${kategori}`);
+          }
         });
+
+        wisataLayer.addTo(map);
+        kulinerLayer.addTo(map);
+        fasilitasLayer.addTo(map);
 
         document.getElementById('loading').style.display = 'none';
       });
   }
 
-  function filterData() {
-    var cat1 = document.getElementById('cat1').checked;
-    var cat2 = document.getElementById('cat2').checked;
-
-    markers.forEach(m => {
-      if ((m.category === 'A' && cat1) || (m.category === 'B' && cat2)) {
-        m.addTo(map);
-      } else {
-        map.removeLayer(m);
-      }
-    });
-  }
-
-  document.getElementById('cat1').onchange = filterData;
-  document.getElementById('cat2').onchange = filterData;
-
   loadData();
 
-  // Legend
+  // Legend kanan bawah
   var legend = L.control({position: 'bottomright'});
+
   legend.onAdd = function () {
     var div = L.DomUtil.create('div', 'legend');
-    div.innerHTML =
-      '<b>Legenda</b><br>' +
-      '<i style="color:red">●</i> Kategori A<br>' +
-      '<i style="color:blue">●</i> Kategori B';
+    div.innerHTML = `
+      <b>Legenda</b><br>
+      <img src="https://cdn-icons-png.flaticon.com/128/11137/11137156.png" width="15"> Tempat Wisata<br>
+      <img src="https://cdn-icons-png.flaticon.com/128/6078/6078099.png" width="15"> Kuliner<br>
+      <img src="https://cdn-icons-png.flaticon.com/128/15654/15654202.png" width="15"> Fasilitas Umum
+    `;
     return div;
   };
+
   legend.addTo(map);
+
 </script>
 
 </body>
 </html>
-
