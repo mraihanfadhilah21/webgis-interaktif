@@ -91,18 +91,18 @@
           var kategori = cols[3];
           var deskripsi = cols[4];
 
-          if (isNaN(lat) || isNaN(lng)) return;
+          if (isNaN(lat) || isNaN(lon)) return;
 
           var marker;
 
           if (kategori === 'wisata') {
-            marker = L.marker([lat, lng], {icon: iconWisata});
+            marker = L.marker([lat, lon], {icon: iconWisata});
             marker.addTo(wisataLayer);
           } else if (kategori === 'kuliner') {
-            marker = L.marker([lat, lng], {icon: iconKuliner});
+            marker = L.marker([lat, lon], {icon: iconKuliner});
             marker.addTo(kulinerLayer);
           } else if (kategori === 'fasum') {
-            marker = L.marker([lat, lng], {icon: iconFasilitas});
+            marker = L.marker([lat, lon], {icon: iconFasilitas});
             marker.addTo(fasilitasLayer);
           }
 
