@@ -86,8 +86,9 @@
 
           var nama = cols[0];
           var lat = parseFloat(cols[1]);
-          var lng = parseFloat(cols[2]);
+          var lon = parseFloat(cols[2]);
           var kategori = cols[3];
+          var deskripsi = cols[4];
 
           if (isNaN(lat) || isNaN(lng)) return;
 
@@ -105,7 +106,7 @@
           }
 
           if (marker) {
-            marker.bindPopup(`<b>${nama}</b><br>${kategori}`);
+            marker.bindPopup(`<b>${nama}</b><br>${deskripsi}`);
           }
         });
 
