@@ -93,13 +93,13 @@
 
           var marker;
 
-          if (kategori === 'Tempat Wisata') {
+          if (kategori === 'wisata') {
             marker = L.marker([lat, lng], {icon: iconWisata});
             marker.addTo(wisataLayer);
-          } else if (kategori === 'Kuliner') {
+          } else if (kategori === 'kuliner') {
             marker = L.marker([lat, lng], {icon: iconKuliner});
             marker.addTo(kulinerLayer);
-          } else if (kategori === 'Fasilitas Umum') {
+          } else if (kategori === 'fasum') {
             marker = L.marker([lat, lng], {icon: iconFasilitas});
             marker.addTo(fasilitasLayer);
           }
